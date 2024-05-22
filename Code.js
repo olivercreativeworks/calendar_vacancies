@@ -1,3 +1,6 @@
+/**
+ * @return {void}
+ */
 function getVacancies() {
   const events = CalendarApp.getEventsForDay(new Date())
   
