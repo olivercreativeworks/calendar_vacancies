@@ -6,11 +6,6 @@ function testingDates(){
   }
 }
 
-function logMe(){
-  Logger.log("me!")
-  Logger.log("Me too!")
-}
-
 function getVacancies() {
   const events = CalendarApp.getEventsForDay(new Date())
   
