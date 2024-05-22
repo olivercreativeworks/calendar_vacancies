@@ -7,7 +7,7 @@ function testingDates(){
 }
 
 function logMe(){
-  Logger.log("me")
+  Logger.log("me!")
 }
 
 function getVacancies() {
