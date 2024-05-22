@@ -8,7 +8,7 @@ function testingDates(){
 
 function logMe(){
   Logger.log("me!")
-  Logger.log("Me too")
+  Logger.log("Me too!")
 }
 
 function getVacancies() {
