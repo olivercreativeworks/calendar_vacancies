@@ -1,11 +1,3 @@
-function testingDates(){
-  for(let i = 0; i < 30; i++){
-    const today = new Date()
-    const nextDate = new Date(today.setDate(today.getDate() + i))
-    Logger.log(nextDate)
-  }
-}
-
 function getVacancies() {
   const events = CalendarApp.getEventsForDay(new Date())
   
