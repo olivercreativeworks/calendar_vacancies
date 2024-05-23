@@ -13,17 +13,10 @@ function getVacancies() {
     .concat([{getStartTime: () => startOfDay, getEndTime:() => startOfDay}])
     .concat([{getStartTime: () => startLunch, getEndTime:() => endLunch}])
     .concat([{getStartTime: () => endOfDay, getEndTime: () => endOfDay }])
-    .toSorted((a, b) => a.getStartTime() - b.getStartTime())
 
-  const times2 = $events.slice(1).reduce((t, event, i) => {
-    if($events[i].getEndTime() < event.getStartTime()){
-      return t.concat([[$events[i].getEndTime(), event.getStartTime()]])
-    }
-    return t
-  },[])
-
-  Logger.log(times2)
-  Logger.log(findVacancies($events.flatMap((time) => [{startTime:time.getStartTime(), endTime:time.getEndTime()}]) ))
+  Logger.log(
+    findVacancies($events.flatMap((time) => [{startTime:time.getStartTime(), endTime:time.getEndTime()}]) )
+    )
 }
 
 /**
@@ -31,6 +24,9 @@ function getVacancies() {
  * @property {Date} startTime
  * @property {Date} endTime
  */
+
+// Get blocks of events
+// identify gaps between the blocks
 
 /**
  * @param {Event[]} schedule
@@ -40,12 +36,36 @@ function findVacancies(schedule){
   /** @type {Event[]} */
   const events = schedule.toSorted(sortFromEarliestToLatest)
   console.log(events)
-  return events.slice(1).reduce((vacancies, event, index) =>{
-    const previousEvent = events[index]
-    console.log(findVacancy(previousEvent, event))
+  const aggregate = events.slice(1).reduce((blocks, event, index) => {
+    if(eventsOverlap(blocks.currentBlock, event)){
+      const minTime = blocks.currentBlock.startTime < event.startTime ? blocks.currentBlock.startTime : event.startTime
+      const maxTime = blocks.currentBlock.endTime > event.endTime ? blocks.currentBlock.endTime : event.endTime
+      blocks.currentBlock = {
+        startTime:  minTime,
+        endTime: maxTime
+      }
+      return blocks
+    }else{
+      blocks.storedBlocks = blocks.storedBlocks.concat(blocks.currentBlock)
+      blocks.currentBlock = event
+      if(JSON.stringify(event) === JSON.stringify(events.at(-1))){
+        blocks.storedBlocks = blocks.storedBlocks.concat(event)
+      }
+      return blocks
+    }
+  }, {storedBlocks:[], currentBlock: events[0]})
+    .storedBlocks
+
+
+  console.log(aggregate)
+
+  const result = aggregate.slice(1).reduce((vacancies, event, index) => {
+    const previousEvent = aggregate[index]
     return vacancies.concat(findVacancy(previousEvent, event))
   }, [])
     .filter(x => x)
+  console.log(result)
+  return result
 }
 
 /**
@@ -54,19 +74,11 @@ function findVacancies(schedule){
  * @return {Event} vacancy
  */
 function findVacancy(firstEvent, nextEvent){
-  if(eventsOverlap(firstEvent, nextEvent)) return undefined
+  if(firstEvent.endTime >= nextEvent.startTime) return undefined
   return {
-    startTime:firstEvent.endTime,
+    startTime: firstEvent.endTime,
     endTime:nextEvent.startTime
   }
-}
-
-/**
- * @param {Event} firstEvent
- * @param {Event} nextEvent
- */
-function eventsOverlap(firstEvent, nextEvent){
-  return firstEvent.endTime >= nextEvent.startTime
 }
 
 /**
@@ -77,13 +89,6 @@ function sortFromEarliestToLatest(eventA, eventB){
   return eventA.startTime - eventB.startTime
 }
 
-function testMe(){
-  Logger.log(undefined >= new Date())
-  Logger.log(undefined <= new Date())
-  const arr = []
-  const ar2 = arr.concat(undefined).concat(3).concat(undefined).concat(4)
-  Logger.log(ar2)
-}
 
 
 
