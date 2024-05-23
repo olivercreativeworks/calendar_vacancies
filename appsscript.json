@@ -1,7 +1,15 @@
 {
   "timeZone": "America/Port-au-Prince",
-  "dependencies": {
-  },
   "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  "runtimeVersion": "V8",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "GASTEST",
+        "libraryId": "19ZUc7SElR5xZQsxM1E-Ip5yITnLWsUMZzy0pOVr0i962q4eb38cRnUF5",
+        "version": "0",
+        "developmentMode": true
+      }
+    ]
+  }
 }
