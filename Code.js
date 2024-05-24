@@ -25,9 +25,6 @@ function getVacancies() {
  * @property {Date} endTime
  */
 
-// Get blocks of events
-// identify gaps between the blocks
-
 /**
  * @param {Event[]} schedule
  * @return {Event[]}
@@ -35,50 +32,12 @@ function getVacancies() {
 function findVacancies(schedule){
   /** @type {Event[]} */
   const events = schedule.toSorted(sortFromEarliestToLatest)
-  console.log(events)
-  const aggregate = events.slice(1).reduce((blocks, event, index) => {
-    if(eventsOverlap(blocks.currentBlock, event)){
-      const minTime = blocks.currentBlock.startTime < event.startTime ? blocks.currentBlock.startTime : event.startTime
-      const maxTime = blocks.currentBlock.endTime > event.endTime ? blocks.currentBlock.endTime : event.endTime
-      blocks.currentBlock = {
-        startTime:  minTime,
-        endTime: maxTime
-      }
-      return blocks
-    }else{
-      blocks.storedBlocks = blocks.storedBlocks.concat(blocks.currentBlock)
-      blocks.currentBlock = event
-      if(JSON.stringify(event) === JSON.stringify(events.at(-1))){
-        blocks.storedBlocks = blocks.storedBlocks.concat(event)
-      }
-      return blocks
-    }
-  }, {storedBlocks:[], currentBlock: events[0]})
-    .storedBlocks
 
+  const eventBlocks = events.reduce(mergeEvents, [])
 
-  console.log(aggregate)
+  const vacancies = eventBlocks.reduce(findGaps, [])
 
-  const result = aggregate.slice(1).reduce((vacancies, event, index) => {
-    const previousEvent = aggregate[index]
-    return vacancies.concat(findVacancy(previousEvent, event))
-  }, [])
-    .filter(x => x)
-  console.log(result)
-  return result
-}
-
-/**
- * @param {Event} firstEvent
- * @param {Event} nextEvent
- * @return {Event} vacancy
- */
-function findVacancy(firstEvent, nextEvent){
-  if(firstEvent.endTime >= nextEvent.startTime) return undefined
-  return {
-    startTime: firstEvent.endTime,
-    endTime:nextEvent.startTime
-  }
+  return vacancies
 }
 
 /**
@@ -89,6 +48,37 @@ function sortFromEarliestToLatest(eventA, eventB){
   return eventA.startTime - eventB.startTime
 }
 
+/**
+ * @param {Event[]} blocks
+ * @param {Event} event
+ * @return {Event[]}
+ */
+function mergeEvents(blocks, event){
+  /** @type {Event} */
+  const mostRecentBlock = blocks.at(-1)
 
+  if(mostRecentBlock && mostRecentBlock.endTime >= event.startTime){
+    const mergedBlock = {
+      startTime: mostRecentBlock.startTime, 
+      endTime: new Date(Math.max(mostRecentBlock.endTime, event.endTime))
+    }
+    return blocks.with(-1, mergedBlock)
+  }
+  return blocks.concat(event)
+}
 
-
+/**
+ * @param {Event[]} vacancies
+ * @param {Event} event
+ * @param {index} number
+ * @param {Event[]} blocks
+ * @return {Event[]}
+ */
+function findGaps(vacancies, event, index, blocks){
+  /** @type {Event} */
+  const nextEvent = blocks.at(index + 1)
+  
+  if(!nextEvent || event.endTime >= nextEvent.startTime) return vacancies
+  const vacancy = {startTime: event.endTime, endTime: nextEvent.startTime}
+  return vacancies.concat(vacancy)
+}
