@@ -2,21 +2,48 @@
  * @return {void}
  */
 function getVacancies() {
-  const events = CalendarApp.getEventsForDay(new Date())
-  
-  const startOfDay = new Date(new Date().setHours(9, 0, 0, 0))
-  const endOfDay = new Date(new Date().setHours(17, 0, 0, 0))
-  const startLunch = new Date(new Date().setHours(12, 0, 0, 0))
-  const endLunch = new Date(new Date().setHours(13, 0, 0, 0))
+  const events = CalendarApp.getEvents(new Date("May 22, 2024"), new Date())
 
-  const $events = events
-    .concat([{getStartTime: () => startOfDay, getEndTime:() => startOfDay}])
-    .concat([{getStartTime: () => startLunch, getEndTime:() => endLunch}])
-    .concat([{getStartTime: () => endOfDay, getEndTime: () => endOfDay }])
-
-  Logger.log(
-    findVacancies($events.flatMap((time) => [{startTime:time.getStartTime(), endTime:time.getEndTime()}]) )
+  const eventsByDate = events.reduce((group, event) => {
+    const key = event.getStartTime().toDateString()
+    const eventsArray = group[key] || []
+    const entries = Object.fromEntries(
+      [[key, eventsArray.concat({startTime:event.getStartTime(), endTime:event.getEndTime()})]]
     )
+    return Object.assign({}, group, entries)
+  }, {})
+
+  /**
+   * @type {[string, Event[]][]}
+   */
+  const schedulesByDate = Object.entries(eventsByDate).map(([key, schedule]) => {
+    return [key, schedule.concat({startTime:new Date(new Date(key).setHours(12, 0, 0, 0)), endTime:new Date(new Date(key).setHours(13, 0, 0, 0))})]
+  })
+
+  console.log(schedulesByDate)
+  
+  const schedules = schedulesByDate.map(([dt, schedule]) => {
+    console.log(schedule)
+    return [dt, findWorkdayVacancies(schedule, {startTime: makeTime({hour:9}, new Date(dt)), endTime: makeTime({hour:17}, new Date(dt))})]
+  })
+  schedules.forEach(schedule => {
+    console.log(schedule[0])
+    console.log(schedule[1])
+  })
+}
+
+/**
+ * @param {Event[]} schedule
+ * @param {Event} workday
+ */
+function findWorkdayVacancies(schedule, workday = {startTime:new Date(), endTime:makeTime({hour:23, minute:59}, new Date())}){
+  const workdaySchedule = schedule
+    .filter(event => workday.startTime <= event.endTime && event.startTime <= workday.endTime)
+    .concat([
+      {startTime:workday.startTime, endTime:workday.startTime},
+      {startTime:workday.endTime, endTime:workday.endTime}
+    ])
+  return findVacancies(workdaySchedule)
 }
 
 /**
@@ -81,4 +108,18 @@ function findGaps(vacancies, event, index, blocks){
   if(!nextEvent || event.endTime >= nextEvent.startTime) return vacancies
   const vacancy = {startTime: event.endTime, endTime: nextEvent.startTime}
   return vacancies.concat(vacancy)
+}
+
+
+/**
+ * @param {Date} forDate
+ * @param {Date} time
+ */
+function updateTime(forDate, time){
+  return new Date(new Date(forDate).setHours(
+    time.getHours(),
+    time.getMinutes(),
+    time.getSeconds(),
+    time.getMilliseconds()
+  ))
 }

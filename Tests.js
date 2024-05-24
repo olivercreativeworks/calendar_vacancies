@@ -1,7 +1,7 @@
 /**
  * @param {(events:Event[]) => Event[]} fn
  */
-function testCalendarVacancies(fn = findVacancies){
+function testFindVacancies(fn = findVacancies){
   GASTEST.describe(fn.name, () => {
     const firstEvent = makeEvent({hour:9}, {hour:9})
     const lastEvent = makeEvent({hour:17}, {hour:17})
@@ -61,6 +61,36 @@ function testCalendarVacancies(fn = findVacancies){
   })
 }
 
+/**
+ * @param {(events:Event[], workday:Event) => Event[]} fn
+ */
+function testFindWorkdayVacancies(fn = findWorkdayVacancies){
+  GASTEST.describe(fn.name, () => {
+    GASTEST.describe("Should handle multi-day events", () => {
+      const workdate = new Date("5/24/2024")
+      const workday = makeEvent({hour:9}, {hour:17}, workdate)
+      GASTEST.test("Should return no vacancies", () => {
+        const eventThatSpansEntireWorkdayIntoNextDay = {
+          startTime: workday.startTime, 
+          endTime: makeTime({hour:getRandomIntBetween(0, 24)}, new Date(new Date(workdate).setDate(workdate.getDate() + 1))) 
+        }
+        const events = [eventThatSpansEntireWorkdayIntoNextDay ]
+        const vacancies = fn(events, workday)
+        GASTEST.expectEquality(vacancies, [])
+      })
+      GASTEST.test("Should return at least one vacancy", () => {
+        const eventThatSpansPartialWorkdayIntoNextDay = {
+          startTime: makeTime({hour: workday.startTime.getHours() + 1}, workdate), 
+          endTime: makeTime({hour:getRandomIntBetween(0, 24)}, new Date(new Date(workdate).setDate(workdate.getDate() + 1))) 
+        }
+        const events = [eventThatSpansPartialWorkdayIntoNextDay]
+        const vacancies = fn(events, workday)
+        GASTEST.expectEquality(vacancies.length >= 1, true)
+      })
+    })
+  })
+}
+
 function getRandomIntBetween(startExclusive, endExclusive){
   return startExclusive + getRandomInt(endExclusive - startExclusive - 1)
 
@@ -76,15 +106,16 @@ function getRandomIntBetween(startExclusive, endExclusive){
 /**
  * @param {{hour:number, minute?:number}} startTime
  * @param {{hour:number, minute?:number}} endTime
+ * @param {Date} [forDate]
  * @return {Event}
  */
-function makeEvent(startTime, endTime){
-  return {startTime:makeTime(startTime), endTime:makeTime(endTime)}
-
-  /**
-   * @param {{hour:number, minute?:number}} time
-   */
-  function makeTime(time){
-    return new Date(new Date().setHours(time.hour, time.minute || 0))
-  }
+function makeEvent(startTime, endTime, forDate){
+  return {startTime:makeTime(startTime, forDate), endTime:makeTime(endTime, forDate)}
+}
+/**
+ * @param {{hour:number, minute?:number}} time
+ * @param {Date} onDate
+ */
+function makeTime(time, onDate = new Date){
+  return new Date(new Date(onDate).setHours(time.hour, time.minute || 0, 0, 0))
 }
