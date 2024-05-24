@@ -7,9 +7,12 @@
       {
         "userSymbol": "GASTEST",
         "libraryId": "19ZUc7SElR5xZQsxM1E-Ip5yITnLWsUMZzy0pOVr0i962q4eb38cRnUF5",
-        "version": "0",
-        "developmentMode": true
+        "version": "18"
       }
     ]
+  },
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "MYSELF"
   }
 }
